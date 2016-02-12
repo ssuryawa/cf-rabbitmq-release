@@ -65,15 +65,44 @@ upload_release() {
   popd
 }
 
+upload_loggregator_release() {
+  local _release_path=$1
+
+  pushd "$_release_path"
+  ssh-add -l
+
+  if [ $? -ne 0 ]; then
+    echo "Please add your ssh key"
+    exit 1
+  fi
+
+  set -xe
+
+  git submodule update --init --recursive
+  bundle install
+
+  bosh -n create release --with-tarball --force
+  bosh -n upload release --rebase || log "[WARN] Attempted a --rebase, but there were no job or package changes."
+  popd
+}
+
+upload_metrics_release() {
+  local _bosh_deployment_manifest_path=$1
+
+  upload_release "${WORKSPACE_BASE_DIR}/service-metrics-release"
+}
+
 main() {
   check_args "$@"
 
   bosh_target_and_set_deployment "$BOSH_TARGET_ALIAS" "$BOSH_MANIFEST"
 
   upload_release "${WORKSPACE_BASE_DIR}/cf-${RELEASE_NAME}-release"
+  upload_metrics_release "$BOSH_MANIFEST"
+  upload_loggregator_release "${WORKSPACE_BASE_DIR}/loggregator"
 
   bosh_deploy
-  bosh_run_errand "broker-registrar"
+  # bosh_run_errand "broker-registrar"
 }
 
 main "$@"

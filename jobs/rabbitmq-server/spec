@@ -22,6 +22,8 @@ properties:
     description: "Verify peer method used by RabbitMQ server"
   rabbitmq-server.ssl.fail_if_no_peer_cert:
     description: "Should RabbitMQ server fail if there is no peer cert"
+  rabbitmq-server.ssl.ciphers:
+    description: "List of ciphers that RabbitMQ should support (array of strings)"
 
   rabbitmq-server.plugins:
     description: "RabbitMQ plugins (array of strings)"

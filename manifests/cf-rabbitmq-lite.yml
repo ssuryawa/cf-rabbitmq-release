@@ -176,10 +176,13 @@ properties:
         rWIWalJPIuI6kyjOAJ957ouNRLTUJOVUKJU2DdyY4vVFeSIK3ZOGf2puuF3eCoH2
         ZIp7Uk0mB8rImQca/7E+aUMBiHDTSAjTXPRj+vWu/2dKjV2O9pK7HxxN
         -----END CERTIFICATE-----
-      security_options:
-        - enable_tls1_0 #required until warden rootfs is upgraded to trusty
       verify: verify_peer
       fail_if_no_peer_cert: false
+      ciphers:
+      - "rsa,aes_128_cbc,sha256"
+      - "rsa,aes_128_cbc,sha"
+      - "rsa,aes_256_cbc,sha"
+      - "rsa,aes_256_cbc,sha256"
   rabbitmq-haproxy:
     ports:
     - 5672

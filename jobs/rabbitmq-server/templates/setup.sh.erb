@@ -28,7 +28,7 @@ job_ip_md5 = Digest::MD5.hexdigest(job_ip)
 cookie = p('rabbitmq-server.cookie', Digest::MD5.hexdigest(ips.join))
 
 # TLS versions with a '.' character should include single quotes
-supported_tls_versions = %w{'tlsv1.2' 'tlsv1.1'}
+supported_tls_versions = %w{'tlsv1.2'}
 security_options = p('rabbitmq-server.ssl.security_options')
 if security_options.include?('enable_tls1_0')
   supported_tls_versions << "tlsv1"
@@ -40,6 +40,12 @@ end
 fail_if_no_peer_cert = false
 if_p("rabbitmq-server.ssl.fail_if_no_peer_cert") do |f|
   fail_if_no_peer_cert = f
+end
+custom_ciphers = ''
+if_p("rabbitmq-server.ssl.ciphers") do |ciphers|
+  if ciphers && ciphers.length > 1
+    custom_ciphers = ciphers.map{|cipher| '{' + cipher + '}'}.join(',')
+  end
 end
 
 %>
@@ -145,7 +151,12 @@ end
   <% if ssl %>
   # concatenate options encoded in double quotes, see the concatenation comment above.
   # {versions,['tlsv1.2','tlsv1.1',tlsv1]} disables SSLv3 to mitigate the POODLE attack.
-  SSL_OPTIONS=" -rabbit ssl_options [{cacertfile,\\\"${SCRIPT_DIR}/../etc/cacert.pem\\\"},{certfile,\\\"${SCRIPT_DIR}/../etc/cert.pem\\\"},{keyfile,\\\"${SCRIPT_DIR}/../etc/key.pem\\\"},{verify,<%= "#{verify_peer}" %>},{fail_if_no_peer_cert,<%= "#{fail_if_no_peer_cert}" %>},{versions,<%= "[#{supported_tls_versions.join(',')}]" %>}]"
+  <% if custom_ciphers.empty? %>
+    SSL_OPTIONS=" -rabbit ssl_options [{cacertfile,\\\"${SCRIPT_DIR}/../etc/cacert.pem\\\"},{certfile,\\\"${SCRIPT_DIR}/../etc/cert.pem\\\"},{keyfile,\\\"${SCRIPT_DIR}/../etc/key.pem\\\"},{verify,<%= "#{verify_peer}" %>},{fail_if_no_peer_cert,<%= "#{fail_if_no_peer_cert}" %>},{versions,<%= "[#{supported_tls_versions.join(',')}]" %>}]"
+  <% end %>
+  <% if !custom_ciphers.empty? %>
+    SSL_OPTIONS=" -rabbit ssl_options [{cacertfile,\\\"${SCRIPT_DIR}/../etc/cacert.pem\\\"},{certfile,\\\"${SCRIPT_DIR}/../etc/cert.pem\\\"},{keyfile,\\\"${SCRIPT_DIR}/../etc/key.pem\\\"},{verify,<%= "#{verify_peer}" %>},{fail_if_no_peer_cert,<%= "#{fail_if_no_peer_cert}" %>},{versions,<%= "[#{supported_tls_versions.join(',')}]" %>},{ciphers,<%= "[#{custom_ciphers}]" %>}]"
+  <% end %>
   SERVER_START_ARGS="${SERVER_START_ARGS}\"${SSL_OPTIONS}\""
   <% end %>
   if [ -f ${CONF_ENV_FILE} ]

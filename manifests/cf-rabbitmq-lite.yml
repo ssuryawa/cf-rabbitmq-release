@@ -176,6 +176,7 @@ properties:
         rWIWalJPIuI6kyjOAJ957ouNRLTUJOVUKJU2DdyY4vVFeSIK3ZOGf2puuF3eCoH2
         ZIp7Uk0mB8rImQca/7E+aUMBiHDTSAjTXPRj+vWu/2dKjV2O9pK7HxxN
         -----END CERTIFICATE-----
+      depth: 0
       verify: verify_peer
       fail_if_no_peer_cert: false
       ciphers:

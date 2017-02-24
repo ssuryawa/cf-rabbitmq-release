@@ -18,7 +18,7 @@ properties:
   rabbitmq-server.ssl.security_options:
     description: "SSL security options (currently only 'enable_tls1_0')"
     default: []
-  rabbitmq-server.ssl.depth:
+  rabbitmq-server.ssl.verification_depth:
     description: "Maximum number of non-self-issued intermediate certificates that may follow the peer certificate in a valid certification path"
   rabbitmq-server.ssl.verify:
     description: "Verify peer method used by RabbitMQ server"

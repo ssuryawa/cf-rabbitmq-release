@@ -20,6 +20,7 @@ properties:
     default: []
   rabbitmq-server.ssl.verification_depth:
     description: "Maximum number of non-self-issued intermediate certificates that may follow the peer certificate in a valid certification path"
+    default: 5
   rabbitmq-server.ssl.verify:
     description: "Verify peer method used by RabbitMQ server"
   rabbitmq-server.ssl.fail_if_no_peer_cert:

@@ -57,7 +57,9 @@
   (testing "config with missing management domain"
     (is (not (cfg/valid? (load-config "config/missing_management_domain.yml")))))
   (testing "config with missing RabbitMQ administrator"
-    (is (not (cfg/valid? (load-config "config/missing_rabbitmq_administrator.yml"))))))
+    (is (not (cfg/valid? (load-config "config/missing_rabbitmq_administrator.yml")))))
+  (testing "config with missing RabbitMQ regular user tags"
+    (is (not (cfg/valid? (load-config "config/missing_regular_user_tags.yml"))))))
 
 (deftest test-service-info
   (let [m (load-config "config/valid.yml")
@@ -72,6 +74,41 @@
          :metadata
          :plans)))
 
+(deftest test-display-name
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "WhiteRabbitMQ" (get-in info [:metadata "displayName"])))))
+
+(deftest test-provider-name
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "SomeCompany" (get-in info [:metadata "providerDisplayName"])))))
+
+(deftest test-description
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "this is a description" (get-in info [:description])))))
+
+(deftest test-long-description
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "this is a long description" (get-in info [:metadata "longDescription"])))))
+
+(deftest test-documentation-url
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "https://example.com" (get-in info [:metadata "documentationUrl"])))))
+
+(deftest test-support-url
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "https://support.example.com" (get-in info [:metadata "supportUrl"])))))
+
+(deftest test-image-url
+  (let [m (load-config "config/valid.yml")
+        info (cfg/service-info m)]
+    (is (= "data:image/png;base64,image_icon_base64" (get-in info [:metadata "imageUrl"])))))
+
 (deftest test-node-hosts
   (testing "when there is no DNS host"
     (let [m (load-config "config/valid.yml")]
@@ -83,3 +120,7 @@
 (deftest test-rabbitmq-administrator-uris
   (let [m (load-config "config/valid.yml")]
     (is (= (set (cfg/rabbitmq-administrator-uris m)) #{"http://127.0.0.1:15672" "http://127.0.0.2:15672"}))))
+
+(deftest test-rabbitmq-regular-user-tags
+  (let [m (load-config "config/valid.yml")]
+    (is (= (cfg/regular-user-tags m) "policymaker,management"))))

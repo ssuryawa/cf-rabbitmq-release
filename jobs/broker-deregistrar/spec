@@ -4,6 +4,8 @@ packages:
 - cf-cli
 templates:
   errand.sh.erb: bin/run
+  change-permissions.sh.erb: bin/change-permissions
+  permissions-test.sh.erb: bin/permissions-test
 properties:
   cf.api_url:
     description: 'Full URL of Cloud Foundry API'
@@ -13,3 +15,9 @@ properties:
     description: 'Password of the admin user'
   broker.name:
     description: 'Name of the service broker'
+  broker.service.name:
+    description: 'Name of the service the broker provides'
+    default: 'p-rabbitmq'
+  cf.skip_ssl_validation:
+    description: 'Trust self signed cf certificates'
+    default: true

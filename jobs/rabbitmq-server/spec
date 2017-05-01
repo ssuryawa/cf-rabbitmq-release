@@ -1,12 +1,13 @@
+# vim: set filetype=yaml :
 ---
 name: rabbitmq-server
 packages:
-- util-linux # needed for setsid
 - erlang
 - rabbitmq-server
+- rabbitmq-common
 - rabbitmq-cluster-migration-tool
 - rabbitmq-upgrade-preparation
-- syslog_aggregator
+- rabbitmq-syslog-aggregator
 
 properties:
   rabbitmq-server.ssl.cacert:
@@ -18,18 +19,22 @@ properties:
   rabbitmq-server.ssl.security_options:
     description: "SSL security options (currently only 'enable_tls1_0')"
     default: []
-  rabbitmq-server.ssl.verification_depth:
-    description: "Maximum number of non-self-issued intermediate certificates that may follow the peer certificate in a valid certification path"
-    default: 5
-  rabbitmq-server.ssl.verify:
-    description: "Verify peer method used by RabbitMQ server"
-  rabbitmq-server.ssl.fail_if_no_peer_cert:
-    description: "Should RabbitMQ server fail if there is no peer cert"
   rabbitmq-server.ssl.ciphers:
     description: "List of ciphers that RabbitMQ should support (array of strings)"
+  rabbitmq-server.ssl.verify:
+    description: "Peer verification method used by RabbitMQ server"
+    default: false
+  rabbitmq-server.ssl.verification_depth:
+    description: "Peer verification depth used by RabbitMQ server"
+    default: 5
+  rabbitmq-server.ssl.fail_if_no_peer_cert:
+    description: "Should RabbitMQ server reject connection if there is no peer cert"
+    default: false
 
   rabbitmq-server.plugins:
-    description: "RabbitMQ plugins (array of strings)"
+    description: "List of RabbitMQ plugins"
+  rabbitmq-server.ports:
+    description: "List of ports on which the RabbitMQ cluster accepts connections"
 
   rabbitmq-server.administrators.broker.username:
     description: "RabbitMQ admin username for broker"
@@ -42,16 +47,29 @@ properties:
 
   rabbitmq-server.config:
     description: "RabbitMQ configuration (base64 encoded)"
+    default: "W10u" # base64 encoding of '[].'
 
   rabbitmq-server.cookie:
     description: "Erlang cookie used by RabbitMQ nodes and rabbitmqctl"
 
-  rabbitmq-server.static_ips:
-    description: "Cluster node IPs"
-
   rabbitmq-server.fd_limit:
     description: "The file descriptor limit for the RabbitMQ process"
     default: 300000
+
+  rabbitmq-server.disk_alarm_threshold:
+    description: "The threshold in bytes of free disk space at which rabbitmq will raise an alarm"
+    default: "{mem_relative,0.4}"
+
+  rabbitmq-server.cluster_partition_handling:
+    description: "Cluster partition recover mode property. Valid values are: pause_minority, autoheal"
+    default: "pause_minority"
+
+  rabbitmq-server.force-unsafe-upgrade.disable-version-checking:
+    description: "This property is for support cases only. Leave as false unless you are prepared to get your cluster in an unrecoverable state, including complete data loss."
+    default: false
+
+  rabbitmq-server.restart_statsdb_cron_schedule:
+    description: "Schedule of when to restart the RabbitMQ StatsDB."
 
   syslog_aggregator.address:
     description: "Syslog drain hostname"
@@ -59,13 +77,36 @@ properties:
     description: "Syslog drain port"
 
 templates:
-  plugins.sh.erb:                   bin/plugins.sh
-  rabbitmq-server.init.erb:         bin/rabbitmq-server.init
-  setup.sh.erb:                     bin/setup.sh
-  node_name_migration.sh:           bin/node_name_migration.sh
-  rabbitmq.config.erb:              etc/rabbitmq.config
-  cacert.pem.erb:                   etc/cacert.pem
-  cert.pem.erb:                     etc/cert.pem
-  key.pem.erb:                      etc/key.pem
-  syslog_forwarder.conf.erb:        config/syslog_forwarder.conf
-  rabbitmq_syslog.conf.erb:         config/rabbitmq_syslog.conf
+  add-rabbitmqctl-to-path.bash:             bin/add-rabbitmqctl-to-path
+  cacert.pem.erb:                           etc/cacert.pem
+  cert.pem.erb:                             etc/cert.pem
+  cleanup-http-logs.bash:                   bin/cleanup-http-logs
+  cluster-check.bash:                       bin/cluster-check
+  syslog_forwarder.conf.erb:                config/syslog_forwarder.conf
+  rabbitmq_syslog.conf:                     config/rabbitmq_syslog.conf
+  delete_old_files.bash:                    lib/delete_old_files.bash
+  drain.bash:                               bin/drain
+  key.pem.erb:                              etc/key.pem
+  node-check.bash:                          bin/node-check
+  node_name_migration.sh:                   bin/node_name_migration.sh
+  plugins.sh.erb:                           bin/plugins.sh
+  post-deploy.bash:                         bin/post-deploy
+  prepare-for-upgrade.bash:                 lib/prepare-for-upgrade.bash
+  pre-start.bash:                           bin/pre-start
+  rabbitmq-server.init.bash:                bin/rabbitmq-server.init
+  rabbitmq.config.erb:                      etc/rabbitmq.config
+  setup.sh.erb:                             bin/setup.sh
+  users.erb:                                etc/users
+  config.erb:                               etc/config
+  ensure-rabbitmq-statsdb-restart-cron.erb: bin/ensure-rabbitmq-statsdb-restart-cron
+  kill-with-fire.bash:                      bin/kill-with-fire
+
+provides:
+  - name: rabbitmq-server
+    type: rabbitmq-server
+    properties:
+    - rabbitmq-server
+
+consumes:
+  - name: rabbitmq-server
+    type: rabbitmq-server

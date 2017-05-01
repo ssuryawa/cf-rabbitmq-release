@@ -27,28 +27,9 @@
   [config]
   (log/set-level! (keyword (cfg/log-level config))))
 
-(defn own-pid
-  "Returns PID of the current OS process"
-  []
-  (let [^String name (-> (ManagementFactory/getRuntimeMXBean) .getName)]
-    (Long/valueOf ^String (first (.split name "@")))))
-
-(defn drop-pid
-  "Writes PID of the current OS process to file at path.
-   The file will be created if it does not exists."
-  [^String path]
-  (let [f  (File. path)]
-    (with-open [wr (io/writer f)]
-      (doto f
-        .createNewFile
-        .deleteOnExit)
-      (.write wr (String/valueOf (own-pid))))))
-
 (defn announce-start
   [config]
-  (log/infof "Starting. PID: %s, PID path: %s, CC endpoint: %s"
-             (own-pid)
-             (cfg/pid-path config)
+  (log/infof "Starting. CC endpoint: %s"
              (cfg/cc-endpoint config)))
 
 (defn log-if-using-tls
@@ -66,7 +47,8 @@
 
 (def catalog {:services [{:name "p-rabbitmq"
                           :provider "pivotal"
-                          :description "RabbitMQ messaging broker"
+                          :display_name "RabbitMQ"
+                          :offering_description "RabbitMQ messaging broker"
                           :tags ["rabbitmq" "rabbit" "messaging" "message-queue" "amqp" "mqtt" "stomp"]}]})
 
 (defn init-catalog!
@@ -154,7 +136,8 @@
             (if (cfg/operator-set-policy-enabled?) (rs/add-operator-set-policy id))
             (catch Exception e
               (rs/delete-vhost id)
-              (rs/delete-user mu mp)
+              (log/errorf "Failed to provision a service: %s" id)
+              (rs/delete-user mu)
               (throw e)))
           (created {:dashboard_url (rs/dashboard-url mu mp)})))
     (catch Exception e
@@ -267,7 +250,6 @@
 (defn start
   [config]
   (initialize-logger config)
-  (drop-pid (cfg/pid-path config))
   (announce-start config)
   (install-signal-traps)
   (init-catalog! config)

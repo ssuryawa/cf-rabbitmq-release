@@ -1,8 +1,9 @@
-<% ips = p("rabbitmq-haproxy.server_ips")
-   ports = p("rabbitmq-haproxy.ports").to_s.
-   split(/[\[\], ]/).
-   map { |port| port.to_i }.
-   select { |port| port > 0 && port < 65536 }
+<%
+  ips = link('rabbitmq-server').instances.map(&:address)
+  ports = link('rabbitmq-server').p('rabbitmq-server.ports').to_s.
+    split(/[\[\], ]/).
+    map { |port| port.to_i }.
+    select { |port| port > 0 && port < 65536 }
 %>
 global
 	daemon
@@ -29,12 +30,13 @@ frontend input-<%= port %>
 backend output-<%= port %>
         mode tcp
         balance leastconn
-<% ips.each_index do |idx| %>
-	server node<%= idx %> <%= ips[idx] %>:<%= port %> check inter 5000
+<% ips.each_with_index do |ip, idx| %>
+	server node<%= idx %> <%= ip %>:<%= port %> check inter 5000
 <% end %>
 <% end %>
 
-listen stats 0.0.0.0:80
+listen stats
+    bind 0.0.0.0:80
     mode http
     balance
     timeout client 5000
@@ -48,7 +50,7 @@ listen stats 0.0.0.0:80
     stats realm HAProxy\ Statistics
 
     #The user/pass you want to use.
-    stats auth <%= p("rabbitmq-haproxy.stats.username") %>:<%= p("rabbitmq-haproxy.stats.password") %>
+    stats auth <%= p('rabbitmq-haproxy.stats.username') %>:<%= p('rabbitmq-haproxy.stats.password') %>
 
     #This allows you to take down and bring up back end servers.
     #This will produce an error on older versions of HAProxy.

@@ -1,26 +1,29 @@
+#/* vim: set ft=sh : */
+
 set -e
 
-RMQ_VERSION="3.5.7"
-ERLANG_VERSION="18.1"
+RMQ_VERSION="3.6.9"
+RMQ_VERSION_SEMVER="3.6.9"
+RMQ_CLUSTERER_VERSION="3.6.5"
+ERLANG_VERSION="19.3"
 
-echo $RMQ_VERSION > ${BOSH_INSTALL_TARGET}/rmq_version
-echo $ERLANG_VERSION > ${BOSH_INSTALL_TARGET}/erlang_version
+echo "$RMQ_VERSION_SEMVER" > "$BOSH_INSTALL_TARGET/rmq_version"
+echo "$ERLANG_VERSION" > "$BOSH_INSTALL_TARGET/erlang_version"
 
-tar xzf rabbitmq-server/rabbitmq-server-generic-unix-${RMQ_VERSION}.tar.gz
+tar xf "rabbitmq-server/rabbitmq-server-generic-unix-$RMQ_VERSION.tar.xz"
 
-cp -a rabbitmq_server-${RMQ_VERSION}/* ${BOSH_INSTALL_TARGET}
+cp -a "rabbitmq_server-$RMQ_VERSION"/* "$BOSH_INSTALL_TARGET"
 
-mv ${BOSH_INSTALL_TARGET}/sbin ${BOSH_INSTALL_TARGET}/privbin
+mv "$BOSH_INSTALL_TARGET/sbin" "$BOSH_INSTALL_TARGET/privbin"
 
-mkdir ${BOSH_INSTALL_TARGET}/bin
+mkdir "$BOSH_INSTALL_TARGET/bin"
 for script in rabbitmqctl rabbitmq-server rabbitmq-plugins
 do
-    cp rabbitmq-server/rabbitmq-script-wrapper ${BOSH_INSTALL_TARGET}/bin/${script}
-    chmod 0755 ${BOSH_INSTALL_TARGET}/bin/${script}
+    cp rabbitmq-server/rabbitmq-script-wrapper "$BOSH_INSTALL_TARGET/bin/$script"
+    chmod 0755 "$BOSH_INSTALL_TARGET/bin/$script"
 done
 
-cp -a rabbitmq-server/rabbitmq-defaults ${BOSH_INSTALL_TARGET}/privbin/
 
-cp -a rabbitmq-server/rabbitmq_clusterer-${RMQ_VERSION}.ez ${BOSH_INSTALL_TARGET}/plugins/
 
-cp -af rabbitmq-server/rabbitmq_mqtt-${RMQ_VERSION}.ez ${BOSH_INSTALL_TARGET}/plugins/
+cp -a "rabbitmq-server/rabbitmq-defaults" "$BOSH_INSTALL_TARGET/privbin/"
+cp -a "rabbitmq-server/rabbitmq_clusterer-${RMQ_CLUSTERER_VERSION}.ez" "${BOSH_INSTALL_TARGET}/plugins/"

@@ -10,40 +10,40 @@ require 'prof/service_instance'
 require 'prof/cloud_foundry'
 require 'prof/test_app'
 
-describe "logging configuration" do
-
-  RMQ_Z1_JOB_NAME = "rmq_z1"
-  RMQ_Z2_JOB_NAME = "rmq_z2"
-  HAPROXY_JOB_NAME = "haproxy_z1"
-  BOSH_JOB_INDEX = 0
-  RMQ_Z1_HOST = bosh_director.ips_for_job(RMQ_Z1_JOB_NAME, environment.bosh_manifest.deployment_name)[BOSH_JOB_INDEX]
-  RMQ_Z2_HOST = bosh_director.ips_for_job(RMQ_Z2_JOB_NAME, environment.bosh_manifest.deployment_name)[BOSH_JOB_INDEX]
-  HAPROXY_HOST = bosh_director.ips_for_job(HAPROXY_JOB_NAME, environment.bosh_manifest.deployment_name)[BOSH_JOB_INDEX]
+RSpec.describe "logging configuration" do
+  RMQ_Z1_HOST = bosh_director.ips_for_job("rmq", environment.bosh_manifest.deployment_name)[0]
+  RMQ_Z2_HOST = bosh_director.ips_for_job("rmq", environment.bosh_manifest.deployment_name)[1]
+  RMQ_Z3_HOST = bosh_director.ips_for_job("rmq", environment.bosh_manifest.deployment_name)[2]
+  HAPROXY_HOST = bosh_director.ips_for_job("haproxy", environment.bosh_manifest.deployment_name)[0]
 
   HAPROXY_LOG_LOCATION = "/var/vcap/sys/log/rabbitmq-haproxy/haproxy.log"
 
   RMQ_HOST_Z1_DIGEST = Digest::MD5.hexdigest(RMQ_Z1_HOST)
   RMQ_HOST_Z2_DIGEST = Digest::MD5.hexdigest(RMQ_Z2_HOST)
+  RMQ_HOST_Z3_DIGEST = Digest::MD5.hexdigest(RMQ_Z3_HOST)
 
   SERVICE_NAME = environment.bosh_manifest.property('rabbitmq-broker.service.name')
   SERVICE = Prof::MarketplaceService.new(
-      name: SERVICE_NAME,
-      plan: 'standard'
-    )
+    name: SERVICE_NAME,
+    plan: 'standard'
+  )
 
   context "when a connection is made over AMQP" do
     before :context do
       ssh_gateway.execute_on(RMQ_Z1_HOST, "cp /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z1_DIGEST}.log /tmp")
       ssh_gateway.execute_on(RMQ_Z2_HOST, "cp /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z2_DIGEST}.log /tmp")
+      ssh_gateway.execute_on(RMQ_Z3_HOST, "cp /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z3_DIGEST}.log /tmp")
 
       ssh_gateway.execute_on(RMQ_Z1_HOST, "> /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z1_DIGEST}.log")
       ssh_gateway.execute_on(RMQ_Z2_HOST, "> /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z2_DIGEST}.log")
+      ssh_gateway.execute_on(RMQ_Z3_HOST, "> /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z3_DIGEST}.log")
 
     end
 
     after :context do
       ssh_gateway.execute_on(RMQ_Z1_HOST, "cp /tmp/rabbit@#{RMQ_HOST_Z1_DIGEST}.log /var/vcap/sys/log/rabbitmq-server")
       ssh_gateway.execute_on(RMQ_Z2_HOST, "cp /tmp/rabbit@#{RMQ_HOST_Z2_DIGEST}.log /var/vcap/sys/log/rabbitmq-server")
+      ssh_gateway.execute_on(RMQ_Z3_HOST, "cp /tmp/rabbit@#{RMQ_HOST_Z3_DIGEST}.log /var/vcap/sys/log/rabbitmq-server")
     end
 
     it "logs an AMQP connection acceptance at INFO level to rabbitmq server logs", :pushes_cf_app do
@@ -57,8 +57,9 @@ describe "logging configuration" do
       end
       rabbitmq_server1_log = ssh_gateway.execute_on(RMQ_Z1_HOST, "cat /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z1_DIGEST}.log")
       rabbitmq_server2_log = ssh_gateway.execute_on(RMQ_Z2_HOST, "cat /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z2_DIGEST}.log")
+      rabbitmq_server3_log = ssh_gateway.execute_on(RMQ_Z3_HOST, "cat /var/vcap/sys/log/rabbitmq-server/rabbit@#{RMQ_HOST_Z3_DIGEST}.log")
 
-      expect(rabbitmq_server1_log + rabbitmq_server2_log).to include "accepting AMQP connection"
+      expect(rabbitmq_server1_log + rabbitmq_server2_log + rabbitmq_server3_log).to include "accepting AMQP connection"
     end
   end
 

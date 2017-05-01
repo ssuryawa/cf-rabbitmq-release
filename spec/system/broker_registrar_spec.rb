@@ -2,7 +2,7 @@ require 'spec_helper'
 
 require 'hula'
 
-describe 'Broker Registrar' do
+RSpec.describe 'Broker Registrar', :broker, test_with_errands: true do
   before(:all) do
     deregister_broker
 
@@ -57,8 +57,9 @@ describe 'Broker Registrar' do
       @disabled_orgs = @orgs[2, 4]
 
       modify_and_deploy_manifest do |manifest|
-        job = manifest['jobs'].select{ |j| j['name'] == 'broker-registrar' }[0]
-        job['properties']['broker-registrar'] = { 'orgs' => @enabled_orgs }
+        errand = manifest.fetch('instance_groups').detect{ |j| j['name'] == 'broker-registrar' }
+        errand['properties'] ||= {}
+        errand['properties']['broker-registrar'] = { 'orgs' => @enabled_orgs }
       end
 
       register_broker
@@ -88,7 +89,6 @@ describe 'Broker Registrar' do
       expect(service_available?(service_name)).to be_falsey
     end
   end
-
 end
 
 def service_available?(name)
